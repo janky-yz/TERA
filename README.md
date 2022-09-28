@@ -183,4 +183,4 @@ TEA quant --kallisto -fq1 ${fastq1} -fq2 ${fastq2} -e ${ref_TE_bed} -p test -r $
 
 ## Copyright and License Information
 
-Copyright (C) 2021 Jianqi She (janky666@bjmu.edu.cn). See the LICENSE file for license rights and limitations.
+Copyright (C) 2021 Jianqi She (janky666@bjmu.edu.cn). See the [LICENSE](https://github.com/janky-yz/TEA/blob/main/LICENSE) file for license rights and limitations.
