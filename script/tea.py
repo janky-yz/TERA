@@ -183,30 +183,30 @@ def detect(args):
 
 		print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Start to align RNA-seq reads to reference genome.', flush=True)
 
-#		STAR(args)
+		STAR(args)
 
-#		cmd = 'rm -rf '+args.prefix+'__STARpass1 '+args.prefix+'__STARgenome '+args.prefix+'_SJ.out.tab '+args.prefix+'_Log.progress.out '+args.prefix+'_Log.out Log.out'
-#		subprocess.check_call(cmd, shell=True, executable='/bin/bash')
+		cmd = 'rm -rf '+args.prefix+'__STARpass1 '+args.prefix+'__STARgenome '+args.prefix+'_SJ.out.tab '+args.prefix+'_Log.progress.out '+args.prefix+'_Log.out Log.out'
+		subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 
-#		create_BAM_index(args)
+		create_BAM_index(args)
 
 		print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Finish.', flush=True)
 
 
 		print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Start to de novo assemble transcripts by Trinity.', flush=True)
 
-#		Trinity(args)
-#		Remap(args)
+		Trinity(args)
+		Remap(args)
 
-#		cmd = 'rm -rf '+Trinity_gff3+' '+Trinity_fasta
-#		subprocess.check_call(cmd, shell=True, executable='/bin/bash')
+		cmd = 'rm -rf '+Trinity_gff3+' '+Trinity_fasta
+		subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 
 		print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Finish.', flush=True)
 
 
 		print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Start to assemble transcripts by StringTie.', flush=True)
 
-#		StringTie(args)
+		StringTie(args)
 
 		print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Finish.', flush=True)
 
