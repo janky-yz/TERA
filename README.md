@@ -83,7 +83,7 @@ optional arguments:
                         Output directory (default: .)
   -p PREFIX, --prefix PREFIX
                         Prefix for output file name (default: TEA)
-  -m MERGE, --merge MERGE
+  -m {1,2}, --merge {1,2}
                         Merge pattern. 1: local, 2: global (default: 1)
   -S STAR_INDEX, --STAR_index STAR_INDEX
                         Path to the directory where STAR index generated
