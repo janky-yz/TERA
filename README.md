@@ -33,7 +33,7 @@ Reference genome: reference genome sequnce (FASTA) and annotation (GTF) is requi
 
 usage: TEA [-h] {detect,quant} ...
 
-TEA: pipeline for Transposable element analysis
+TEA: pipeline for Transposable Element Analysis
 
 positional arguments:
   {detect,quant}  sub-command help
