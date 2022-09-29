@@ -233,7 +233,7 @@ def quant(args):
 	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] TEA quantification is done.', flush=True)
 
 
-parser = argparse.ArgumentParser(description='TEA: pipeline for Transposable element analysis')
+parser = argparse.ArgumentParser(description='TEA: pipeline for Transposable Element Analysis')
 subparsers = parser.add_subparsers(help='sub-command help')
 
 parser_detect = subparsers.add_parser('detect', help='detect help')
