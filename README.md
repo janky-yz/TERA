@@ -4,7 +4,7 @@ A developed pipeline for transposable element analysis.
 This repository contains TEA script (script/) and TE reference files (hg19, hg38, chm13v2.0)
 ## Software requirements
 
-1. Required: python3 (pandas ≥ 1.0.0, numpy), samtools, gffread v0.11.6, BEDTools
+1. Required: python3 (pandas >= 1.0.0, numpy), samtools, gffread v0.11.6, BEDTools
 2. TEA detect (TE identification): STAR, Trinity, StringTie, GMAP
 3. TEA quant (TE quantification): RSEM or kallisto
 
