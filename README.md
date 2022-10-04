@@ -115,8 +115,8 @@ optional arguments:
 ```
 
 In the output directory, you will see output files:
-1. ${prefix}.gtf (all transcripts including TE and nonTE)
-2. ${prefix}_TE_exon.bed (TE exons): 11 columns for chromosome, start, end, transcript_id, gene_id, strand, exon_type, TE_ID, TE_name, TE_family, TE_class
+1. TEA.gtf (all transcripts including TE and nonTE)
+2. TEA_TE_exon.bed (TE exons): 11 columns for chromosome, start, end, transcript_id, gene_id, strand, exon_type, TE_ID, TE_name, TE_family, TE_class
 
 ### TEA quant
 
@@ -160,9 +160,9 @@ optional arguments:
 ```
 
 In the output directory, you will see output files:
-1. ${prefix}_transcript_quant.out (quantification results for all transcripts including TE and nonTE): 5 columns for transcript_id, length, eff_length, count, TPM
-2. ${prefix}_TE_exon_quant.out (quantification results for TE exon clusters): 3 columns for exon_cluster, count, TPM
-3. ${prefix}_TE_exon_anno.bed (information of TE exons): 12 columns for chromosome, start, end, transcript_id, gene_id, strand, exon_type, exon_cluster, TE_ID, TE_name, TE_family, TE_class
+1. TEA_transcript_quant.out (quantification results for all transcripts including TE and nonTE): 5 columns for transcript_id, length, eff_length, count, TPM
+2. TEA_TE_exon_quant.out (quantification results for TE exon clusters): 3 columns for exon_cluster, count, TPM
+3. TEA_TE_exon_anno.bed (information of TE exons): 12 columns for chromosome, start, end, transcript_id, gene_id, strand, exon_type, exon_cluster, TE_ID, TE_name, TE_family, TE_class
 
 ### Example pipeline
 
