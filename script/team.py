@@ -362,8 +362,8 @@ with cd(tmp_dir):
 	exon_file = args.prefix+'.exon.bed'
 	cov_file = args.prefix+'.cov.txt'
 	TE_exon_bed = args.prefix+'.TE.exon.bed'
-	out_bed = args.prefix+'_TEAM_TE_exon.bed'
-	out_gtf = args.prefix+'_TEAM.gtf'
+	out_bed = args.prefix+'_TE_exon.bed'
+	out_gtf = args.prefix+'.gtf'
 	TE_exon_ref_overlap = args.prefix+'_TE_exon_ref_overlap.txt'
 
 	exon_dict = defaultdict()
