@@ -4,6 +4,7 @@
 import argparse
 import os
 import subprocess
+import csv
 import gzip
 import multiprocessing as mp
 import pandas as pd
@@ -129,15 +130,18 @@ def TEAM(args):
 	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 
 def TEEN(args):
+	TEEN_index = os.path.abspath(args.index)
 	cmd = 'python3 '+os.path.join(script_dir, 'teen.py') \
 		+' -r '+ref_fasta \
 		+' -a '+ref_gtf \
 		+' -e '+ref_TE_bed \
+		+' -i '+TEEN_index \
 		+' -t '+str(args.nthread) \
 		+' -fq1 '+fastq1 \
 		+' -fq2 '+fastq2 \
 		+' -o '+out_dir \
-		+' -p '+args.prefix
+		+' -p '+args.prefix \
+		+' -d '+str(args.exon_diff)
 
 	if args.kallisto:
 		cmd += ' --quant kallisto'
@@ -215,10 +219,7 @@ def detect(args):
 
 		TEAM(args)
 
-		cmd = 'gffread -T --sort-alpha -o '+out_gtf+' '+TEAM_gtf
-		subprocess.check_call(cmd, shell=True, executable='/bin/bash')
-
-		cmd = 'rm -rf '+STRG_gtf+' '+Trinity_gtf+' '+TEAM_gtf
+		cmd = 'rm -rf '+STRG_gtf+' '+Trinity_gtf
 		subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 
 		print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Finish.', flush=True)
@@ -233,7 +234,7 @@ def quant(args):
 	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] TEA quantification is done.', flush=True)
 
 
-parser = argparse.ArgumentParser(description='TEA: pipeline for Transposable Element Analysis')
+parser = argparse.ArgumentParser(description='TEA: Transposable Element Analysis')
 subparsers = parser.add_subparsers(help='sub-command help')
 
 parser_detect = subparsers.add_parser('detect', help='detect help')
@@ -270,6 +271,8 @@ parser_quant.add_argument('-s', '--stranded_type', help='Strand-specific RNA-seq
 parser_quant.add_argument('-o', '--output_dir', default='.', help='Output directory (default: .)')
 parser_quant.add_argument('-p', '--prefix', default='TEA', help='Prefix for output file name (default: TEA)')
 parser_quant.add_argument('-t', '--nthread', type=int, default=1, help='Number of threads to run TEA (default: 1)')
+parser_quant.add_argument('-i', '--index', default='./TEEN_index/TEEN', help='Index name (default: ./TEEN_index/TEEN)')
+parser_quant.add_argument('-d', '--exon_diff', type=int, default=10, help='Maximum difference (bp) of exon ends (default: 10)')
 parser_quant.add_argument('--kallisto', help='Specific Quantification by kallisto', action='store_true')
 parser_quant.add_argument('--rsem', help='Specific Quantification by RSEM', action='store_true')
 parser_quant.add_argument('--TE_exon', help='TE exon annotation in BED format (Only for quantification analysis)')
@@ -294,7 +297,6 @@ Trinity_gff3 = out_dir+'/'+args.prefix+'_Trinity.gff3'
 Trinity_gtf = out_dir+'/'+args.prefix+'_Trinity.gtf'
 STRG_gtf = out_dir+'/'+args.prefix+'_STRG.gtf'
 TEAM_gtf = out_dir+'/'+args.prefix+'_TEAM.gtf'
-out_gtf = out_dir+'/'+args.prefix+'.gtf'
 
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)

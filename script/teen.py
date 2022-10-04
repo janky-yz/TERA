@@ -162,7 +162,7 @@ def TEEN(args):
 
 	cluster1 = pd.DataFrame({'exon_ID':exon_ID, 'exon_class':exon_class})
 	all_ID = exon_overlap['ID1'].drop_duplicates()
-	remain_ID = list(set(all_ID).difference(set(cluster1['exon_ID'])))
+	remain_ID = sorted(list(set(all_ID).difference(set(cluster1['exon_ID']))))
 	cluster2 = pd.DataFrame({'exon_ID':remain_ID, 'exon_class':np.arange(index+1,index+1+len(remain_ID))})
 	exon_cluster = pd.concat([cluster1, cluster2])
 
@@ -232,7 +232,7 @@ parser.add_argument('--TE_exon', help='TE exon annotation in BED format')
 parser.add_argument('-q', '--quant', help='Quantification pattern: kallisto or rsem (required)')
 parser.add_argument('-i', '--index', default='./TEEN_index/TEEN', help='Index name (default: ./TEEN_index/TEEN)')
 parser.add_argument('-t', '--nthread', type=int, default=1, help='Number of threads to run TEEN (default: 1)')
-parser.add_argument('-d', '--exon_diff', default=10, help='Maximum difference (bp) of exon ends (default: 10)')
+parser.add_argument('-d', '--exon_diff', type=int, default=10, help='Maximum difference (bp) of exon ends (default: 10)')
 
 args = parser.parse_args()
 out_dir = os.path.abspath(args.output_dir)
@@ -249,6 +249,7 @@ fastq2 = os.path.abspath(args.fastq2)
 TE_exon_self_overlap = args.prefix+'_TE_exon_self_overlap.txt'
 TE_exon_ref_overlap = args.prefix+'_TE_exon_ref_overlap.txt'
 
+TE_exon_bed = out_dir+'/'+args.prefix+'_TE_exon_anno.bed'
 transcript_quant_out = out_dir+'/'+args.prefix+'_transcript_quant.out'
 exon_quant_out = out_dir+'/'+args.prefix+'_TE_exon_quant.out'
 
@@ -307,10 +308,10 @@ with cd(out_dir):
 		subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 
 	if args.TE_exon:
-		TE_exon_bed = os.path.abspath(args.TE_exon)
+		cmd = 'cut -f1-7 '+os.path.abspath(args.TE_exon)+' >'+TE_exon_bed
+		subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 	else:
 		transcript_exon_bed = out_dir+'/'+args.prefix+'_transcript_exon.bed'
-		TE_exon_bed = out_dir+'/'+args.prefix+'_TE_exon_anno.bed'
 		extract_TE_exon(args)
 		os.remove(transcript_exon_bed)
 

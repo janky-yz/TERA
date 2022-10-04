@@ -5,6 +5,7 @@ import argparse
 import re
 import random
 import os
+import csv
 import shutil
 import subprocess
 import pandas as pd
@@ -57,16 +58,6 @@ def extract_exon(gtf_file, exon_dict):
 				else:
 					exon_dict[tid].append(exon)
 	return exon_dict
-
-def remove_duplicates(exon_dict):
-	clean_exon_dict = defaultdict()
-	exon_set = []
-	for tid in exon_dict:
-		exon_list = exon_dict[tid]
-		if exon_list not in exon_set:
-			exon_set.append(exon_list)
-			clean_exon_dict[tid] = exon_dict[tid]
-	return clean_exon_dict
 
 def extract_ME(exon_dict, ME_file):
 	fho = open(ME_file,'w')
@@ -184,21 +175,24 @@ def pos_deal(start, end, start_pos_list, end_pos_list):
 	return(exon_pos)
 
 def TEAM(args):
-	overlap = pd.read_table(overlap_file, header=None)
-	overlap = overlap[[0,1,2,12,6,7,8,9,10,13]].drop_duplicates()
-	overlap.columns = ['Schr', 'Sstart', 'Send', 'strand', 'Stype', 'Mchr', 'Mstart', 'Mend', 'tid', 'Mtype']
-	overlap['ID'] = overlap['Schr']+':'+overlap['Sstart'].astype('str')+'-'+overlap['Send'].astype('str')
-
-	SE = pd.read_table(SE_file, header=None)
-	SE.columns = ['chr', 'start', 'end', 'tid', 'gid', 'strand', 'type']
-	SE['ID'] = SE['chr']+':'+SE['start'].astype('str')+'-'+SE['end'].astype('str')
-	SE = SE[~SE.ID.isin(overlap.ID)]
-
 	ME = pd.read_table(ME_file, header=None)
 	ME.columns = ['chr', 'start', 'end', 'tid', 'gid', 'strand', 'type']
 	ME['ID'] = ME['chr']+':'+ME['start'].astype('str')+'-'+ME['end'].astype('str')+'('+ME['strand']+')'
 	ME['pos'] = ME['start'].astype('str')+','+ME['end'].astype('str')
 	ME_pos = ME.groupby('tid')['pos'].apply(lambda x: ','.join(x)).reset_index()
+	ME_pos = ME_pos.drop_duplicates('pos')
+	ME = ME[ME.tid.isin(ME_pos.tid)]
+
+	overlap = pd.read_table(overlap_file, header=None)
+	overlap = overlap[[0,1,2,12,6,7,8,9,10,13]].drop_duplicates()
+	overlap.columns = ['Schr', 'Sstart', 'Send', 'strand', 'Stype', 'Mchr', 'Mstart', 'Mend', 'tid', 'Mtype']
+	overlap['ID'] = overlap['Schr']+':'+overlap['Sstart'].astype('str')+'-'+overlap['Send'].astype('str')
+	overlap = overlap[overlap.tid.isin(ME_pos.tid)]
+
+	SE = pd.read_table(SE_file, header=None)
+	SE.columns = ['chr', 'start', 'end', 'tid', 'gid', 'strand', 'type']
+	SE['ID'] = SE['chr']+':'+SE['start'].astype('str')+'-'+SE['end'].astype('str')
+	SE = SE[~SE.ID.isin(overlap.ID)]
 
 	keep_rm = (overlap['Sstart']-overlap['Mstart'] >= -10) & (overlap['Send']-overlap['Mend'] <= 10)
 	rm_ID = overlap[keep_rm]['ID'].drop_duplicates()
@@ -238,6 +232,8 @@ def TEAM(args):
 
 	pos_list = ','.join(novel_ME['exon_pos']).split(',')
 	ME_data = pd.DataFrame(np.reshape(pos_list, (int(len(pos_list)/2),2)), columns=['start', 'end'])
+	ME_data['start'] = pd.to_numeric(ME_data['start'])
+	ME_data['end'] = pd.to_numeric(ME_data['end'])
 	ME_data['chr'] = ','.join(novel_ME['chr_list']).split(',')
 	ME_data['strand'] = ','.join(novel_ME['strand_list']).split(',')
 	ME_data['tid'] = ','.join(novel_ME['tid_list']).split(',')
@@ -251,6 +247,17 @@ def TEAM(args):
 	exon_out = exon_out.sort_values(by=['chr', 'start', 'end'])
 	exon_out.to_csv(exon_file, sep='\t', header=0, index=0)
 
+	cmd = "bedtools intersect -a "+exon_file+" -b "+ref_TE_bed+" -s -wo | awk '{if($NF>20){print $0}}' | cut -f 1-7 | uniq >"+TE_exon_bed
+	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
+	cmd = 'bedtools coverage -a '+TE_exon_bed+' -b '+bam_file+' -split >'+cov_file
+	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
+	TE_exon = pd.read_table(cov_file, header=None)
+	TE_tid = TE_exon.loc[TE_exon[10]>=0.80,3].drop_duplicates()
+	tid_rm = TE_exon.loc[~TE_exon[3].isin(TE_tid),3].drop_duplicates()
+	exon_out = exon_out.loc[~exon_out.tid.isin(tid_rm),]
+	TE_exon = TE_exon.loc[TE_exon[10]>=0.80,:6].reset_index(drop=True)
+	TE_exon.columns = ['chr', 'start', 'end', 'tid', 'gid', 'strand', 'type']
+
 	transcript_start = exon_out.groupby('tid')['start'].apply(min).reset_index()
 	transcript_start.columns = ['tid','start']
 	transcript_end = exon_out.groupby('tid')['end'].apply(max).reset_index()
@@ -259,133 +266,36 @@ def TEAM(args):
 	transcript = pd.merge(exon_out[["chr", "tid", "gid", "strand"]].drop_duplicates(), transcript_start_end, on='tid')
 	transcript = transcript[["chr", "start", "end", "tid", "gid", "strand"]]
 	transcript = transcript.sort_values(by=['chr', 'start', 'end'])
-	transcript[transcript['strand'] == "+"].to_csv(transcript_forward_file, sep='\t', header=0, index=0)
-	transcript[transcript['strand'] == "-"].to_csv(transcript_reverse_file, sep='\t', header=0, index=0)
+	transcript_forward = transcript[transcript['strand'] == "+"]
+	transcript_reverse = transcript[transcript['strand'] == "-"]
+	transcript = pd.concat([transcript_forward, transcript_reverse]).reset_index(drop=True)
+	transcript['index'] = transcript.index
 
-def TE_tid(exon_file, ref_TE_bed, TE_exon_bed):
-	cmd = "bedtools intersect -a "+exon_file+" -b "+ref_TE_bed+" -s -wo | awk '{if($NF>20){print $0}}' | cut -f 1-7 | uniq >"+TE_exon_bed
-	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
-
-	TE_tid_list = []
-	with open(TE_exon_bed,'r') as fh:
-		for line in fh.readlines():
-			line = line.strip().split('\t')
-			transcript_id = line[3]
-
-			if transcript_id not in TE_tid_list:
-				TE_tid_list.append(transcript_id)
-	return TE_tid_list
-
-def TE_exon(TE_exon_bed, bam_file, cov_file):
-	cmd = 'bedtools coverage -a '+TE_exon_bed+' -b '+bam_file+' -split >'+cov_file
-	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
-
-	TE_exon = defaultdict()
-	with open(cov_file,'r') as fh:
-		for line in fh.readlines():
-			line = line.strip().split('\t')
-			coverage = float(line[10])
-			transcript_id = line[3]
-			exon = (int(line[1]), int(line[2]))
-
-			if coverage >= 0.80:
-				if transcript_id not in TE_exon:
-					TE_exon[transcript_id] = [exon]
-				else:
-					TE_exon[transcript_id].append(exon)
-	return TE_exon
-
-def ID_assign(transcript_forward_file, transcript_reverse_file, TE_tid_list, TE_exon):
-	novel_ID = defaultdict()
-	GID = 0
+	GID = TID = transcript_min = transcript_max = 0
 	chrom = 'chr1'
-	transcript_min = 0
-	transcript_max = 0
-	with open(transcript_forward_file, 'r') as fh:
-		for line in fh.readlines():
-			line = line.strip().split('\t')
-			chrn = line[0]
-			start = int(line[1])
-			end = int(line[2])
-			transcript_id = line[3]
-			gene_id = line[4]
-			strand = line[5]
-			if (transcript_id not in TE_tid_list) or (transcript_id in TE_exon):
-				if chrn != chrom or start > transcript_max:
-					chrom = chrn
-					transcript_min = start
-					transcript_max = end
-					GID += 1
-					TID = 1
-					novel_ID[transcript_id] = str(GID)+':'+str(TID)
-				else:
-					TID += 1
-					novel_ID[transcript_id] = str(GID)+':'+str(TID)
-					if end > transcript_max:
-						transcript_max = end
+	strand = '+'
+	for i in range(transcript.shape[0]):
+		if (transcript.loc[i,'chr'] != chrom) or (transcript.loc[i,'start'] > transcript_max) or (transcript.loc[i,'strand'] != strand):
+			chrom = transcript.loc[i,'chr']
+			transcript_min = transcript.loc[i,'start']
+			transcript_max = transcript.loc[i,'end']
+			strand = transcript.loc[i,'strand']
+			GID += 1
+			TID = 1
+		else:
+			TID += 1
+			if transcript.loc[i,'end'] > transcript_max:
+				transcript_max = transcript.loc[i,'end']
+		transcript.loc[i,'gene_id'] = 'TEAM_G'+str(GID)
+		if  transcript.loc[i,'tid'] in TE_tid:
+			transcript.loc[i,'transcript_id'] = 'TEAM_G'+str(GID)+'_TET'+str(TID)
+		else:
+			transcript.loc[i,'transcript_id'] = 'TEAM_G'+str(GID)+'_T'+str(TID)
 
-	chrom = 'chr1'
-	transcript_min = 0
-	transcript_max = 0
-	with open(transcript_reverse_file, 'r') as fh:
-		for line in fh.readlines():
-			line = line.strip().split('\t')
-			chrn = line[0]
-			start = int(line[1])
-			end = int(line[2])
-			transcript_id = line[3]
-			gene_id = line[4]
-			strand = line[5]
-			if (transcript_id not in TE_tid_list) or (transcript_id in TE_exon):
-				if chrn != chrom or start > transcript_max:
-					chrom = chrn
-					transcript_min = start
-					transcript_max = end
-					GID += 1
-					TID = 1
-					novel_ID[transcript_id] = str(GID)+':'+str(TID)
-				else:
-					TID += 1
-					novel_ID[transcript_id] = str(GID)+':'+str(TID)
-					if end > transcript_max:
-						transcript_max = end
-	return novel_ID
-	
-def output(exon_file, out_bed, out_gtf, novel_ID, TE_tid_list, TE_exon):
-	bed_fho = open(out_bed, 'w')
-	gtf_fho = open(out_gtf, 'w')
-	with open(exon_file, 'r') as fh:
-		for line in fh.readlines():
-			line = line.strip().split('\t')
-			chrn = line[0]
-			start = int(line[1])
-			end = int(line[2])
-			exon = (start, end)
-			transcript_id = line[3]
-			strand = line[5]
-			exon_type = line[6]
+	TE_exon_out = pd.merge(TE_exon, transcript[['tid', 'transcript_id', 'gene_id', 'index']], on='tid')
+	TE_exon_out = TE_exon_out[["chr", "start", "end", "transcript_id", "gene_id", "strand", "type"]]
+	TE_exon_out.to_csv(TE_exon_bed, sep='\t', header=0, index=0)
 
-			if transcript_id not in TE_tid_list:
-				GID,TID = novel_ID[transcript_id].split(':')
-				team_gid = 'TEAM_G'+str(GID)
-				team_tid = team_gid+'_T'+str(TID)
-				attr = 'transcript_id "'+str(team_tid)+'"; '+'gene_id "'+str(team_gid)+'";'
-				print("%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s" % (chrn, "TEAM", "exon", start+1, end, ".", strand, ".", attr), file=gtf_fho, flush=True)
-			elif transcript_id in TE_exon:
-				GID,TID = novel_ID[transcript_id].split(':')
-				team_gid = 'TEAM_G'+str(GID)
-				team_tid = team_gid+'_TET'+str(TID)
-
-				exon = (start, end)
-				if exon in TE_exon[transcript_id]:
-					print("%s\t%d\t%d\t%s\t%s\t%s\t%s" % (chrn, start, end, team_tid, team_gid, strand, exon_type), file=bed_fho, flush=True)
-
-				attr = 'transcript_id "'+str(team_tid)+'"; '+'gene_id "'+str(team_gid)+'";'
-				print("%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s" % (chrn, "TEAM", "exon", start+1, end, ".", strand, ".", attr), file=gtf_fho, flush=True)
-	bed_fho.close()
-	gtf_fho.close()
-
-def anno(TE_exon_bed, ref_TE_bed, TE_exon_ref_overlap):
 	cmd = "bedtools intersect -a "+TE_exon_bed+" -b "+ref_TE_bed+" -s -wo | awk '{if($NF>20){print $0}}' >"+TE_exon_ref_overlap
 	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 
@@ -402,7 +312,20 @@ def anno(TE_exon_bed, ref_TE_bed, TE_exon_ref_overlap):
 	TE_exon_anno = pd.merge(TE_exon_anno, TE_anno, on='ID')
 	TE_exon_anno = TE_exon_anno[[0,1,2,3,4,5,6,'TE_ID','TE_name','TE_family','TE_class']].drop_duplicates()
 	TE_exon_anno = TE_exon_anno.sort_values(by=[0,1,2])
-	TE_exon_anno.to_csv(TE_exon_bed, sep='\t', header=0, index=0)
+	TE_exon_anno.to_csv(out_bed, sep='\t', header=0, index=0)
+
+	exon_out = pd.merge(exon_out, transcript[['tid', 'transcript_id', 'gene_id', 'index']], on='tid')
+	exon_out['entry'] = 'exon'
+	transcript['entry'] = 'transcript'
+	transcript_exon = pd.concat([transcript[['chr', 'entry', 'start', 'end', 'transcript_id', 'gene_id', 'strand', 'index']], exon_out[['chr', 'entry', 'start', 'end', 'transcript_id', 'gene_id', 'strand', 'index']]])
+	transcript_exon = transcript_exon.sort_values(by=['index', 'entry', 'start'], ascending=[True, False, True])
+	transcript_exon['attr'] = 'transcript_id "'+transcript_exon['transcript_id'].astype('str')+'"; '+' gene_id "'+transcript_exon['gene_id'].astype('str')+'";'
+	transcript_exon['start'] = transcript_exon['start']+1
+	transcript_exon['anno'] = 'TEAM'
+	transcript_exon['score'] = '.'
+	transcript_exon = transcript_exon[['chr', 'anno', 'entry', 'start', 'end', 'score', 'strand', 'score', 'attr']]
+	transcript_exon.to_csv(out_gtf, sep='\t', quoting=csv.QUOTE_NONE, header=0, index=0)
+
 
 parser = argparse.ArgumentParser(description='TEAM: Transposable Element Associated Merge')
 parser.add_argument('-S', '--STRG', help="Specify a gtf file from StringTie")
@@ -439,9 +362,7 @@ with cd(tmp_dir):
 	exon_file = args.prefix+'.exon.bed'
 	cov_file = args.prefix+'.cov.txt'
 	TE_exon_bed = args.prefix+'.TE.exon.bed'
-	transcript_forward_file = args.prefix+'.transcript.forward.bed'
-	transcript_reverse_file = args.prefix+'.transcript.reverse.bed'
-	out_bed = args.prefix+'_TE_exon.bed'
+	out_bed = args.prefix+'_TEAM_TE_exon.bed'
 	out_gtf = args.prefix+'_TEAM.gtf'
 	TE_exon_ref_overlap = args.prefix+'_TE_exon_ref_overlap.txt'
 
@@ -452,9 +373,6 @@ with cd(tmp_dir):
 
 	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Trinity GTF Input.', flush=True)
 	exon_dict = extract_exon(Trinity_gtf, exon_dict)
-
-	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Remove duplicates.', flush=True)
-	exon_dict = remove_duplicates(exon_dict)
 
 	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] TEAM merge.', flush=True)
 	extract_ME(exon_dict, ME_file)
@@ -471,15 +389,6 @@ with cd(tmp_dir):
 		overlap(args)
 
 	TEAM(args)
-
-	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Quality control.', flush=True)
-	TE_tid_list = TE_tid(exon_file, ref_TE_bed, TE_exon_bed)
-	TE_exon = TE_exon(TE_exon_bed, bam_file, cov_file)
-	novel_ID = ID_assign(transcript_forward_file, transcript_reverse_file, TE_tid_list, TE_exon)
-
-	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] TEAM Output.', flush=True)
-	output(exon_file, out_bed, out_gtf, novel_ID, TE_tid_list, TE_exon)
-	anno(out_bed, ref_TE_bed, TE_exon_ref_overlap)
 
 	shutil.copy(out_bed, out_dir)
 	shutil.copy(out_gtf, out_dir)
