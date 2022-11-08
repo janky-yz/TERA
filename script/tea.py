@@ -125,31 +125,6 @@ def TEAM(args, STRG_gtf, Trinity_gtf, ref_TE_bed, align_bam):
 
 	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 
-def TEEN(args):
-	TEEN_index = os.path.abspath(args.index)
-	cmd = 'python3 '+os.path.join(script_dir, 'teen.py') \
-		+' -r '+ref_fasta \
-		+' -a '+ref_gtf \
-		+' -e '+ref_TE_bed \
-		+' -i '+TEEN_index \
-		+' -t '+str(args.nthread) \
-		+' -fq1 '+fastq1 \
-		+' -fq2 '+fastq2 \
-		+' -o '+out_dir \
-		+' -p '+args.prefix \
-		+' -d '+str(args.exon_diff)
-
-	if args.kallisto:
-		cmd += ' --quant kallisto'
-	if args.rsem:
-		cmd += ' --quant rsem'
-	if args.stranded_type:
-		cmd += ' -s '+args.stranded_type
-	if args.TE_exon:
-		cmd += ' --TE_exon '+args.TE_exon
-
-	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
-
 def detect(args):
 	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] TEA identification start.', flush=True)
 
