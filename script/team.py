@@ -252,11 +252,10 @@ def TEAM(args):
 	cmd = 'bedtools coverage -a '+TE_exon_bed+' -b '+bam_file+' -split >'+cov_file
 	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 	TE_exon = pd.read_table(cov_file, header=None)
-	TE_tid = TE_exon.loc[TE_exon[10]>=0.80,3].drop_duplicates()
-	tid_rm = TE_exon.loc[~TE_exon[3].isin(TE_tid),3].drop_duplicates()
-	exon_out = exon_out.loc[~exon_out.tid.isin(tid_rm),]
 	TE_exon = TE_exon.loc[TE_exon[10]>=0.80,:6].reset_index(drop=True)
 	TE_exon.columns = ['chr', 'start', 'end', 'tid', 'gid', 'strand', 'type']
+	TE_tid = TE_exon.tid.drop_duplicates()
+	exon_out = exon_out.loc[exon_out.tid.isin(TE_tid),]
 
 	transcript_start = exon_out.groupby('tid')['start'].apply(min).reset_index()
 	transcript_start.columns = ['tid','start']
@@ -287,10 +286,7 @@ def TEAM(args):
 			if transcript.loc[i,'end'] > transcript_max:
 				transcript_max = transcript.loc[i,'end']
 		transcript.loc[i,'gene_id'] = 'TEAM_G'+str(GID)
-		if  transcript.loc[i,'tid'] in TE_tid:
-			transcript.loc[i,'transcript_id'] = 'TEAM_G'+str(GID)+'_TET'+str(TID)
-		else:
-			transcript.loc[i,'transcript_id'] = 'TEAM_G'+str(GID)+'_T'+str(TID)
+		transcript.loc[i,'transcript_id'] = 'TEAM_G'+str(GID)+'_T'+str(TID)
 
 	TE_exon_out = pd.merge(TE_exon, transcript[['tid', 'transcript_id', 'gene_id', 'index']], on='tid')
 	TE_exon_out = TE_exon_out[["chr", "start", "end", "transcript_id", "gene_id", "strand", "type"]]
@@ -363,7 +359,7 @@ with cd(tmp_dir):
 	cov_file = args.prefix+'.cov.txt'
 	TE_exon_bed = args.prefix+'.TE.exon.bed'
 	out_bed = args.prefix+'_TE_exon.bed'
-	out_gtf = args.prefix+'.gtf'
+	out_gtf = args.prefix+'_TE.gtf'
 	TE_exon_ref_overlap = args.prefix+'_TE_exon_ref_overlap.txt'
 
 	exon_dict = defaultdict()
