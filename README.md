@@ -1,4 +1,4 @@
-# TEA
+# TERA
 A developed pipeline for transposable element analysis.
 
 This repository contains TEA script (script/) and TE reference files (hg19, hg38, chm13v2.0)
@@ -8,7 +8,7 @@ This repository contains TEA script (script/) and TE reference files (hg19, hg38
 2. TEA detect (TE identification): STAR, Trinity, StringTie, GMAP
 3. TEA quant (TE quantification): RSEM or kallisto
 
-## Obtaining TEA
+## Obtaining TERA
 
 ```
 git clone https://github.com/janky-yz/TEA.git
