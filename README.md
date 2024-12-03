@@ -24,7 +24,7 @@ TERA is composed of TE identification (TERA detect), annotation (TERA anno) and 
 
 ```
 RNA sequencing files: paired end, in FASTQ format (fastq or fastq.gz)
-TE reference: TE annotation in GTF or BED format (8 fields: chrom, chromStart, chromEnd, ID, name, strand, family, class).
+TE reference: TE annotation in BED format (8 fields: chrom, chromStart, chromEnd, ID, name, strand, family, class) and GTF format (use script/TEbedtogtf.R).
 Reference genome: reference genome sequnce (FASTA) and annotation (GTF) is required. You can create genome index manually before running TERA.
 ```
 
