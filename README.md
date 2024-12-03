@@ -85,7 +85,7 @@ optional arguments:
   -o OUTPUT_DIR, --output_dir OUTPUT_DIR
                         Output directory (default: .)
   -p PREFIX, --prefix PREFIX
-                        Prefix for output file name (default: TEA)
+                        Prefix for output file name (default: TERA)
   -m {1,2}, --merge {1,2}
                         Merge pattern. 1: local, 2: global (default: 1)
   -S STAR_INDEX, --STAR_index STAR_INDEX
