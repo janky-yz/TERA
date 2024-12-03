@@ -311,7 +311,7 @@ parser_detect.add_argument('-m', '--merge', default=1, type=int, help='Merge pat
 parser_detect.add_argument('-S', '--STAR_index', default='./STAR_index', help='Path to the directory where STAR index generated (default: STAR_index)')
 parser_detect.add_argument('-G', '--GMAP_index', default='./GMAP_index', help='Path to the directory where GMAP index generated (default: GMAP_index)')
 parser_detect.add_argument('-g', '--GMAP_index_name', default='GRCh38', help='GMAP index name (default: GRCh38)')
-parser_detect.add_argument('-t', '--nthread', type=int, default=1, help='Number of threads to run TEA (default: 1)')
+parser_detect.add_argument('-t', '--nthread', type=int, default=1, help='Number of threads to run TERA (default: 1)')
 parser_detect.add_argument('--genomeSAindexNbases', default=14, type=int, help='length (bases) of the SA pre-indexing string for creating STAR index. Typically between 10 and 15. For small genomes, this parameter must be scaled down to min(14, log2(GenomeLength)/2-1)')
 parser_detect.add_argument('--nthreadsort', type=int, help='Number of threads for BAM sorting')
 parser_detect.add_argument('--nRAMsort', type=int, default=10000000000, help='Maximum available RAM (bytes) for sorting BAM (default: 10000000000).')
