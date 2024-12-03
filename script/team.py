@@ -252,10 +252,11 @@ def TEAM(args):
 	cmd = 'bedtools coverage -a '+TE_exon_bed+' -b '+bam_file+' -split >'+cov_file
 	subprocess.check_call(cmd, shell=True, executable='/bin/bash')
 	TE_exon = pd.read_table(cov_file, header=None)
+	TE_tid = TE_exon.loc[TE_exon[10]>=0.80,3].drop_duplicates()
+	tid_rm = TE_exon.loc[~TE_exon[3].isin(TE_tid),3].drop_duplicates()
+	exon_out = exon_out.loc[~exon_out.tid.isin(tid_rm),]
 	TE_exon = TE_exon.loc[TE_exon[10]>=0.80,:6].reset_index(drop=True)
 	TE_exon.columns = ['chr', 'start', 'end', 'tid', 'gid', 'strand', 'type']
-	TE_tid = TE_exon.tid.drop_duplicates()
-	exon_out = exon_out.loc[exon_out.tid.isin(TE_tid),]
 
 	transcript_start = exon_out.groupby('tid')['start'].apply(min).reset_index()
 	transcript_start.columns = ['tid','start']
@@ -286,7 +287,10 @@ def TEAM(args):
 			if transcript.loc[i,'end'] > transcript_max:
 				transcript_max = transcript.loc[i,'end']
 		transcript.loc[i,'gene_id'] = 'TEAM_G'+str(GID)
-		transcript.loc[i,'transcript_id'] = 'TEAM_G'+str(GID)+'_T'+str(TID)
+		if  transcript.loc[i,'tid'] in TE_tid:
+			transcript.loc[i,'transcript_id'] = 'TEAM_G'+str(GID)+'_TET'+str(TID)
+		else:
+			transcript.loc[i,'transcript_id'] = 'TEAM_G'+str(GID)+'_T'+str(TID)
 
 	TE_exon_out = pd.merge(TE_exon, transcript[['tid', 'transcript_id', 'gene_id', 'index']], on='tid')
 	TE_exon_out = TE_exon_out[["chr", "start", "end", "transcript_id", "gene_id", "strand", "type"]]
@@ -319,13 +323,14 @@ def TEAM(args):
 	transcript_exon['start'] = transcript_exon['start']+1
 	transcript_exon['anno'] = 'TEAM'
 	transcript_exon['score'] = '.'
+	transcript_exon = transcript_exon.loc[transcript_exon.transcript_id.isin(TE_exon_out.transcript_id),]
 	transcript_exon = transcript_exon[['chr', 'anno', 'entry', 'start', 'end', 'score', 'strand', 'score', 'attr']]
 	transcript_exon.to_csv(out_gtf, sep='\t', quoting=csv.QUOTE_NONE, header=0, index=0)
 
 
 parser = argparse.ArgumentParser(description='TEAM: Transposable Element Associated Merge')
-parser.add_argument('-S', '--STRG', help="Specify a gtf file from StringTie")
-parser.add_argument('-T', '--Trinity', help="Specify a gtf file from Trinity")
+parser.add_argument('--S1', help="Specify a gtf file from StringTie")
+parser.add_argument('--S2', help="Specify a gtf file from SERVE")
 parser.add_argument('-s', '--stranded', help="Strand-specific RNA-seq", action="store_true")
 parser.add_argument('-r', '--ref_TE', help="TE reference file in BED format")
 parser.add_argument('-b', '--bam', help="Specify a bam file from STAR aligner")
@@ -336,8 +341,8 @@ parser.add_argument('-p', '--prefix', default='TEAM', help="Prefix for output fi
 args = parser.parse_args()
 script_dir = os.path.abspath(os.path.dirname(__file__))
 out_dir = os.path.abspath(args.outdir)
-STRG_gtf = os.path.abspath(args.STRG)
-Trinity_gtf = os.path.abspath(args.Trinity)
+STRG_gtf = os.path.abspath(args.S1)
+SERVE_gtf = os.path.abspath(args.S2)
 ref_TE_bed = os.path.abspath(args.ref_TE)
 bam_file = os.path.abspath(args.bam)
 
@@ -359,7 +364,7 @@ with cd(tmp_dir):
 	cov_file = args.prefix+'.cov.txt'
 	TE_exon_bed = args.prefix+'.TE.exon.bed'
 	out_bed = args.prefix+'_TE_exon.bed'
-	out_gtf = args.prefix+'_TE.gtf'
+	out_gtf = args.prefix+'.gtf'
 	TE_exon_ref_overlap = args.prefix+'_TE_exon_ref_overlap.txt'
 
 	exon_dict = defaultdict()
@@ -367,8 +372,8 @@ with cd(tmp_dir):
 	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] StringTie GTF Input.', flush=True)
 	exon_dict = extract_exon(STRG_gtf, exon_dict)
 
-	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] Trinity GTF Input.', flush=True)
-	exon_dict = extract_exon(Trinity_gtf, exon_dict)
+	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] SERVE GTF Input.', flush=True)
+	exon_dict = extract_exon(SERVE_gtf, exon_dict)
 
 	print('['+datetime.now().strftime("%b %d %H:%M:%S")+'] TEAM merge.', flush=True)
 	extract_ME(exon_dict, ME_file)
