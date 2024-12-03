@@ -306,7 +306,7 @@ parser_detect.add_argument('-r', '--ref_genome', help='Reference genome in FASTA
 parser_detect.add_argument('-a', '--annotation', help='Genome annotation in GTF format (required)', required=True)
 parser_detect.add_argument('-s', '--stranded_type', help='Strand-specific RNA-seq read orientation: RF or FR', choices=['RF', 'FR'])
 parser_detect.add_argument('-o', '--output_dir', default='.', help='Output directory (default: .)')
-parser_detect.add_argument('-p', '--prefix', default='TEA', help='Prefix for output file name (default: TEA)')
+parser_detect.add_argument('-p', '--prefix', default='TERA', help='Prefix for output file name (default: TERA)')
 parser_detect.add_argument('-m', '--merge', default=1, type=int, help='Merge pattern. 1: local, 2: global (default: 1)', choices=[1, 2])
 parser_detect.add_argument('-S', '--STAR_index', default='./STAR_index', help='Path to the directory where STAR index generated (default: STAR_index)')
 parser_detect.add_argument('-G', '--GMAP_index', default='./GMAP_index', help='Path to the directory where GMAP index generated (default: GMAP_index)')
