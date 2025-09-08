@@ -9,6 +9,18 @@ This repository contains TERA script (script/) and TERA reference files (hg19, h
 3. TERA anno (TE annotation): BEDTools
 4. TERA quant (TE quantification): Telescope, RSEM or kallisto
 
+The software required can be installed via conda:
+```
+conda env create -n tera -f environment.yml
+conda activate tera
+conda install -c bioconda gffread=0.12.1 stringtie bedtools
+```
+
+Or via singularity
+```
+singularity build TERA.sif TERA.def
+```
+
 ## Obtaining TERA
 
 ```
