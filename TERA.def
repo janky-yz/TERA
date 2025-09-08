@@ -1,0 +1,30 @@
+Bootstrap: docker
+From: dockerpull.org/continuumio/miniconda3
+
+%files
+    environment.yml /tmp/environment.yml
+    # 将本地的 src/ 目录复制到镜像的 /app/src
+    script/ /app/src/
+    software/ /app/software/
+
+%post
+    # 更新conda
+    conda update -n base -c defaults conda -y
+    # 创建环境
+    conda env create -n tera_env -f /tmp/environment.yml
+    # 清理
+    conda clean -afy
+    rm -f /tmp/environment.yml
+
+    # 设置默认工作目录（可选）
+    cd /app
+
+%environment
+    export PATH="/app/src:/app/software:/opt/conda/envs/tera_env/bin:$PATH"
+    # 设置一个环境变量指向代码目录
+    export APPDIR=/app
+
+%runscript
+    echo "环境已就绪，开始运行 TERA..."
+    # 现在代码已经在镜像里了，直接运行它
+    exec /app/src/TERA "$@"
