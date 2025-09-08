@@ -1,30 +1,23 @@
 Bootstrap: docker
-From: dockerpull.org/continuumio/miniconda3
+From: continuumio/miniconda3
 
 %files
-    environment.yml /tmp/environment.yml
-    # 将本地的 src/ 目录复制到镜像的 /app/src
-    script/ /app/src/
-    software/ /app/software/
+environment.yml /opt/environment.yml
+script /opt/script
 
 %post
-    # 更新conda
-    conda update -n base -c defaults conda -y
-    # 创建环境
-    conda env create -n tera_env -f /tmp/environment.yml
-    # 清理
-    conda clean -afy
-    rm -f /tmp/environment.yml
+conda config --add channels defaults
+conda config --add channels bioconda
+conda config --add channels conda-forge
+conda install -n base micromamba
 
-    # 设置默认工作目录（可选）
-    cd /app
+micromamba env create -n tera -f /opt/environment.yml
+micromamba install -n tera -c bioconda gffread=0.12.1 stringtie bedtools
+cp /opt/script/* /opt/conda/envs/tera/bin/
+rm -f /opt/environment.yml
+rm -rf /opt/script
+ln -s /opt/conda/envs/tera/lib/libcrypto.so.1.1 /opt/conda/envs/tera/lib/libcrypto.so.1.0.0
 
 %environment
-    export PATH="/app/src:/app/software:/opt/conda/envs/tera_env/bin:$PATH"
-    # 设置一个环境变量指向代码目录
-    export APPDIR=/app
-
-%runscript
-    echo "环境已就绪，开始运行 TERA..."
-    # 现在代码已经在镜像里了，直接运行它
-    exec /app/src/TERA "$@"
+export LC_ALL=C
+export PATH="/opt/conda/envs/tera/bin:$PATH"
