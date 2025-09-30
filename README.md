@@ -5,9 +5,9 @@ This repository contains TERA script (script/) and TERA reference files (hg19, h
 ## Software requirements
 
 1. Required: Python3 (pandas, numpy), R
-2. TERA detect (TE identification): SERVE, StringTie, Telescope
-3. TERA anno (TE annotation): BEDTools
-4. TERA quant (TE quantification): Telescope, RSEM or kallisto
+2. TERA detect (TE identification): SERVE (v1.0), StringTie (v2.1.1), Telescope (v1.0.3)
+3. TERA anno (TE annotation): BEDTools (v2.27.1)
+4. TERA quant (TE quantification): Telescope (v1.0.3), RSEM (v1.2.28) or Kallisto (0.44.0)
 
 The software required can be installed via conda:
 ```
